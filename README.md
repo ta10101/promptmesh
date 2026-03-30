@@ -93,7 +93,7 @@ Close and reopen the terminal after install.
 
 **4. Clone the repo inside WSL2**
 ```bash
-git clone https://github.com/ta10101/promptmesh
+git clone https://github.com/your-username/promptmesh
 cd promptmesh
 ```
 
