@@ -1,0 +1,500 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PromptMesh</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      background: #0d1117;
+      color: #e6edf3;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    header {
+      padding: 1rem 2rem;
+      border-bottom: 1px solid #21262d;
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    header h1 {
+      font-size: 1.25rem;
+      font-weight: 600;
+      color: #58a6ff;
+    }
+
+    header .badge {
+      font-size: 0.7rem;
+      padding: 0.2rem 0.5rem;
+      border-radius: 999px;
+      background: #1f6feb33;
+      color: #58a6ff;
+      border: 1px solid #1f6feb;
+    }
+
+    main {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.5rem;
+      padding: 1.5rem 2rem;
+      flex: 1;
+    }
+
+    section {
+      background: #161b22;
+      border: 1px solid #21262d;
+      border-radius: 8px;
+      padding: 1.25rem;
+    }
+
+    section h2 {
+      font-size: 0.875rem;
+      font-weight: 600;
+      color: #8b949e;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 1rem;
+    }
+
+    .form-group { margin-bottom: 0.75rem; }
+
+    label {
+      display: block;
+      font-size: 0.8rem;
+      color: #8b949e;
+      margin-bottom: 0.3rem;
+    }
+
+    input, textarea, select {
+      width: 100%;
+      background: #0d1117;
+      border: 1px solid #30363d;
+      border-radius: 6px;
+      color: #e6edf3;
+      padding: 0.5rem 0.75rem;
+      font-size: 0.875rem;
+      font-family: inherit;
+      outline: none;
+      transition: border-color 0.15s;
+    }
+
+    input:focus, textarea:focus, select:focus {
+      border-color: #58a6ff;
+    }
+
+    textarea { resize: vertical; min-height: 80px; }
+
+    button {
+      background: #238636;
+      color: #fff;
+      border: none;
+      border-radius: 6px;
+      padding: 0.5rem 1rem;
+      font-size: 0.875rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background 0.15s;
+      width: 100%;
+      margin-top: 0.5rem;
+    }
+
+    button:hover { background: #2ea043; }
+    button.secondary { background: #21262d; }
+    button.secondary:hover { background: #30363d; }
+
+    .prompt-card {
+      background: #0d1117;
+      border: 1px solid #21262d;
+      border-radius: 6px;
+      padding: 0.875rem;
+      margin-bottom: 0.75rem;
+      cursor: pointer;
+      transition: border-color 0.15s;
+    }
+
+    .prompt-card:hover { border-color: #58a6ff; }
+    .prompt-card.selected { border-color: #58a6ff; background: #1f2937; }
+
+    .prompt-card h3 {
+      font-size: 0.9rem;
+      font-weight: 600;
+      margin-bottom: 0.25rem;
+    }
+
+    .prompt-card p {
+      font-size: 0.8rem;
+      color: #8b949e;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.3rem;
+      margin-top: 0.4rem;
+    }
+
+    .tag {
+      font-size: 0.7rem;
+      padding: 0.1rem 0.4rem;
+      border-radius: 999px;
+      background: #1f6feb22;
+      color: #79c0ff;
+      border: 1px solid #1f6feb44;
+    }
+
+    .suggestion-card {
+      background: #0d1117;
+      border: 1px solid #21262d;
+      border-radius: 6px;
+      padding: 0.75rem;
+      margin-bottom: 0.5rem;
+    }
+
+    .suggestion-card p {
+      font-size: 0.82rem;
+      line-height: 1.5;
+    }
+
+    .suggestion-card .meta {
+      font-size: 0.7rem;
+      color: #8b949e;
+      margin-top: 0.3rem;
+    }
+
+    .ai-output {
+      background: #0d1117;
+      border: 1px solid #1f6feb;
+      border-radius: 6px;
+      padding: 0.875rem;
+      font-size: 0.85rem;
+      line-height: 1.6;
+      white-space: pre-wrap;
+      min-height: 80px;
+      color: #cdd9e5;
+    }
+
+    .status {
+      font-size: 0.75rem;
+      color: #8b949e;
+      margin-top: 0.5rem;
+      text-align: center;
+    }
+
+    .divider { border: none; border-top: 1px solid #21262d; margin: 1rem 0; }
+
+    .empty { color: #8b949e; font-size: 0.82rem; text-align: center; padding: 1.5rem 0; }
+
+    @media (max-width: 768px) {
+      main { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>PromptMesh</h1>
+  <span class="badge">P2P · Holochain</span>
+</header>
+
+<main>
+  <!-- Left: Create + Browse Prompts -->
+  <section>
+    <h2>Prompts</h2>
+
+    <div class="form-group">
+      <label>Title</label>
+      <input id="promptTitle" type="text" placeholder="e.g. Explain quantum entanglement simply" />
+    </div>
+    <div class="form-group">
+      <label>Content</label>
+      <textarea id="promptContent" placeholder="Write your prompt here..."></textarea>
+    </div>
+    <div class="form-group">
+      <label>Tags (comma-separated)</label>
+      <input id="promptTags" type="text" placeholder="science, education, explainer" />
+    </div>
+    <button id="createPromptBtn">Post Prompt to Mesh</button>
+    <p class="status" id="promptStatus"></p>
+
+    <hr class="divider" />
+    <button class="secondary" id="refreshBtn">Refresh Mesh</button>
+
+    <div id="promptList" style="margin-top: 1rem;">
+      <p class="empty">No prompts yet. Be the first to post.</p>
+    </div>
+  </section>
+
+  <!-- Right: Suggestions + AI relay -->
+  <section>
+    <h2>Suggestions</h2>
+
+    <div id="selectedPromptInfo" style="margin-bottom:1rem;">
+      <p class="empty">Select a prompt from the left to view and add suggestions.</p>
+    </div>
+
+    <div id="suggestionsArea" style="display:none;">
+      <div class="form-group">
+        <label>Your Suggestion / Improvement</label>
+        <textarea id="suggestionContent" placeholder="How would you improve this prompt?"></textarea>
+      </div>
+      <div class="form-group">
+        <label>AI Model used (optional)</label>
+        <input id="aiModel" type="text" placeholder="e.g. claude-sonnet-4-6, gpt-4o" />
+      </div>
+      <button id="submitSuggestionBtn">Submit Suggestion</button>
+      <p class="status" id="suggestionStatus"></p>
+
+      <hr class="divider" />
+      <h2>Peer Suggestions</h2>
+      <div id="suggestionList"><p class="empty">No suggestions yet.</p></div>
+
+      <hr class="divider" />
+      <h2>AI Relay</h2>
+      <div class="form-group">
+        <label>Your API Key (stored locally only)</label>
+        <input id="apiKey" type="password" placeholder="sk-ant-..." />
+      </div>
+      <button id="relayBtn">Aggregate + Send to AI</button>
+      <p class="status" id="relayStatus"></p>
+      <div id="aiOutput" class="ai-output" style="display:none;"></div>
+    </div>
+  </section>
+</main>
+
+<script type="module">
+  // Holochain client — expects conductor proxy at ws://localhost:8888
+  // Replace with your actual port / AppWebsocket setup
+  import { AppWebsocket } from 'https://unpkg.com/@holochain/client@0.17.0/dist/index.js';
+
+  let client = null;
+  let cellId = null;
+  let selectedPromptHash = null;
+
+  async function connect() {
+    try {
+      client = await AppWebsocket.connect('ws://localhost:8888');
+      const info = await client.appInfo({ installed_app_id: 'promptmesh' });
+      cellId = info.cell_info['promptmesh'][0].provisioned.cell_id;
+      console.log('Connected to Holochain:', cellId);
+    } catch (e) {
+      console.warn('Holochain not available — running in demo mode');
+    }
+  }
+
+  async function callZome(zome, fn, payload) {
+    if (!client) throw new Error('Not connected to Holochain');
+    return client.callZome({
+      cell_id: cellId,
+      zome_name: zome,
+      fn_name: fn,
+      payload,
+      provenance: cellId[1],
+    });
+  }
+
+  // ── Prompts ──────────────────────────────────────────────
+
+  document.getElementById('createPromptBtn').addEventListener('click', async () => {
+    const title = document.getElementById('promptTitle').value.trim();
+    const content = document.getElementById('promptContent').value.trim();
+    const tags = document.getElementById('promptTags').value
+      .split(',').map(t => t.trim()).filter(Boolean);
+
+    if (!title || !content) {
+      setStatus('promptStatus', 'Title and content required.', 'error');
+      return;
+    }
+
+    setStatus('promptStatus', 'Posting to mesh...');
+    try {
+      await callZome('prompts', 'create_prompt', { title, content, tags });
+      document.getElementById('promptTitle').value = '';
+      document.getElementById('promptContent').value = '';
+      document.getElementById('promptTags').value = '';
+      setStatus('promptStatus', 'Prompt posted!');
+      await loadPrompts();
+    } catch (e) {
+      setStatus('promptStatus', 'Error: ' + e.message, 'error');
+    }
+  });
+
+  document.getElementById('refreshBtn').addEventListener('click', loadPrompts);
+
+  async function loadPrompts() {
+    setStatus('promptStatus', 'Loading...');
+    try {
+      const records = await callZome('prompts', 'get_all_prompts', null);
+      renderPrompts(records);
+      setStatus('promptStatus', `${records.length} prompt(s) in mesh`);
+    } catch (e) {
+      setStatus('promptStatus', 'Could not load prompts.');
+    }
+  }
+
+  function renderPrompts(records) {
+    const list = document.getElementById('promptList');
+    if (!records.length) {
+      list.innerHTML = '<p class="empty">No prompts yet. Be the first to post.</p>';
+      return;
+    }
+    list.innerHTML = records.map(r => {
+      const entry = r.entry?.Present?.entry;
+      if (!entry) return '';
+      const decoded = JSON.parse(new TextDecoder().decode(entry));
+      const hashB64 = btoa(String.fromCharCode(...new Uint8Array(r.signed_action.hashed.hash)));
+      return `
+        <div class="prompt-card" data-hash="${hashB64}" data-title="${decoded.title}" data-content="${decoded.content}">
+          <h3>${decoded.title}</h3>
+          <p>${decoded.content}</p>
+          <div class="tags">${(decoded.tags || []).map(t => `<span class="tag">${t}</span>`).join('')}</div>
+        </div>`;
+    }).join('');
+
+    document.querySelectorAll('.prompt-card').forEach(card => {
+      card.addEventListener('click', () => selectPrompt(card));
+    });
+  }
+
+  function selectPrompt(card) {
+    document.querySelectorAll('.prompt-card').forEach(c => c.classList.remove('selected'));
+    card.classList.add('selected');
+    selectedPromptHash = card.dataset.hash;
+
+    document.getElementById('selectedPromptInfo').innerHTML = `
+      <strong style="font-size:0.85rem;">${card.dataset.title}</strong>
+      <p style="font-size:0.78rem;color:#8b949e;margin-top:0.25rem;">${card.dataset.content}</p>`;
+    document.getElementById('suggestionsArea').style.display = 'block';
+    loadSuggestions();
+  }
+
+  // ── Suggestions ───────────────────────────────────────────
+
+  document.getElementById('submitSuggestionBtn').addEventListener('click', async () => {
+    const content = document.getElementById('suggestionContent').value.trim();
+    const aiModel = document.getElementById('aiModel').value.trim() || null;
+    if (!content) { setStatus('suggestionStatus', 'Content required.', 'error'); return; }
+
+    const hashBytes = Uint8Array.from(atob(selectedPromptHash), c => c.charCodeAt(0));
+    setStatus('suggestionStatus', 'Submitting...');
+    try {
+      await callZome('suggestions', 'create_suggestion', {
+        prompt_hash: Array.from(hashBytes),
+        content,
+        ai_model: aiModel,
+      });
+      document.getElementById('suggestionContent').value = '';
+      setStatus('suggestionStatus', 'Suggestion submitted!');
+      await loadSuggestions();
+    } catch (e) {
+      setStatus('suggestionStatus', 'Error: ' + e.message, 'error');
+    }
+  });
+
+  async function loadSuggestions() {
+    const hashBytes = Uint8Array.from(atob(selectedPromptHash), c => c.charCodeAt(0));
+    try {
+      const records = await callZome('suggestions', 'get_suggestions_for_prompt', Array.from(hashBytes));
+      renderSuggestions(records);
+    } catch (e) {
+      document.getElementById('suggestionList').innerHTML = '<p class="empty">Could not load suggestions.</p>';
+    }
+  }
+
+  function renderSuggestions(records) {
+    const list = document.getElementById('suggestionList');
+    if (!records.length) {
+      list.innerHTML = '<p class="empty">No suggestions yet.</p>';
+      return;
+    }
+    list.innerHTML = records.map(r => {
+      const entry = r.entry?.Present?.entry;
+      if (!entry) return '';
+      const decoded = JSON.parse(new TextDecoder().decode(entry));
+      return `
+        <div class="suggestion-card">
+          <p>${decoded.content}</p>
+          ${decoded.ai_model ? `<p class="meta">via ${decoded.ai_model}</p>` : ''}
+        </div>`;
+    }).join('');
+  }
+
+  // ── AI Relay ─────────────────────────────────────────────
+
+  document.getElementById('relayBtn').addEventListener('click', async () => {
+    const apiKey = document.getElementById('apiKey').value.trim();
+    if (!apiKey) { setStatus('relayStatus', 'API key required.', 'error'); return; }
+
+    const card = document.querySelector('.prompt-card.selected');
+    if (!card) { setStatus('relayStatus', 'Select a prompt first.'); return; }
+
+    const hashBytes = Uint8Array.from(atob(selectedPromptHash), c => c.charCodeAt(0));
+    setStatus('relayStatus', 'Collecting peer suggestions...');
+
+    let suggestions = [];
+    try {
+      const records = await callZome('suggestions', 'get_suggestions_for_prompt', Array.from(hashBytes));
+      suggestions = records.map(r => {
+        const entry = r.entry?.Present?.entry;
+        return entry ? JSON.parse(new TextDecoder().decode(entry)).content : null;
+      }).filter(Boolean);
+    } catch (e) { /* proceed without */ }
+
+    const systemPrompt = suggestions.length
+      ? `You are a prompt engineer. Peers have suggested these improvements:\n${suggestions.map((s, i) => `${i+1}. ${s}`).join('\n')}\n\nUse these to rewrite the user's prompt into a final, improved version.`
+      : 'You are a prompt engineer. Rewrite the following prompt to be clearer, more specific, and more effective.';
+
+    setStatus('relayStatus', 'Sending to Claude...');
+    try {
+      const res = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: {
+          'x-api-key': apiKey,
+          'anthropic-version': '2023-06-01',
+          'content-type': 'application/json',
+          'anthropic-dangerous-direct-browser-access': 'true',
+        },
+        body: JSON.stringify({
+          model: 'claude-sonnet-4-6',
+          max_tokens: 1024,
+          system: systemPrompt,
+          messages: [{ role: 'user', content: card.dataset.content }],
+        }),
+      });
+
+      const data = await res.json();
+      if (data.error) throw new Error(data.error.message);
+      const output = data.content[0].text;
+
+      document.getElementById('aiOutput').style.display = 'block';
+      document.getElementById('aiOutput').textContent = output;
+      setStatus('relayStatus', 'Done. Share the result back as a suggestion!');
+
+      document.getElementById('suggestionContent').value = output;
+      document.getElementById('aiModel').value = 'claude-sonnet-4-6';
+    } catch (e) {
+      setStatus('relayStatus', 'AI error: ' + e.message, 'error');
+    }
+  });
+
+  // ── Helpers ───────────────────────────────────────────────
+
+  function setStatus(id, msg, type) {
+    const el = document.getElementById(id);
+    el.textContent = msg;
+    el.style.color = type === 'error' ? '#f85149' : '#8b949e';
+  }
+
+  connect();
+</script>
+</body>
+</html>

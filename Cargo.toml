@@ -1,0 +1,12 @@
+[workspace]
+members = [
+  "dnas/promptmesh/zomes/prompts_integrity",
+  "dnas/promptmesh/zomes/prompts",
+  "dnas/promptmesh/zomes/suggestions_integrity",
+  "dnas/promptmesh/zomes/suggestions",
+]
+
+[workspace.dependencies]
+hdi = "0.4"
+hdk = "0.3"
+serde = { version = "1", features = ["derive"] }

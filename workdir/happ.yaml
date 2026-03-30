@@ -1,0 +1,14 @@
+---
+manifest_version: "1"
+name: promptmesh
+description: P2P AI prompt relay — share and refine prompts across a decentralized mesh of peers
+roles:
+  - name: promptmesh
+    provisioning:
+      strategy: create
+      deferred: false
+    dna:
+      bundled: "../dnas/promptmesh/workdir/promptmesh.dna"
+      modifiers:
+        network_seed: ~
+        properties: ~

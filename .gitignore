@@ -1,0 +1,6 @@
+target/
+*.dna
+*.happ
+*.webhapp
+node_modules/
+.env

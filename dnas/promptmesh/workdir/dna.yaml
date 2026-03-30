@@ -1,0 +1,22 @@
+---
+manifest_version: "1"
+name: promptmesh
+integrity:
+  network_seed: ~
+  properties: ~
+  zomes:
+    - name: prompts_integrity
+      bundled: "../../../../target/wasm32-unknown-unknown/release/prompts_integrity.wasm"
+    - name: suggestions_integrity
+      bundled: "../../../../target/wasm32-unknown-unknown/release/suggestions_integrity.wasm"
+coordinator:
+  zomes:
+    - name: prompts
+      bundled: "../../../../target/wasm32-unknown-unknown/release/prompts.wasm"
+      dependencies:
+        - name: prompts_integrity
+    - name: suggestions
+      bundled: "../../../../target/wasm32-unknown-unknown/release/suggestions.wasm"
+      dependencies:
+        - name: suggestions_integrity
+        - name: prompts_integrity
