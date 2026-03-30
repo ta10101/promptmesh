@@ -2,7 +2,7 @@
 manifest_version: "1"
 name: promptmesh
 integrity:
-  network_seed: ~
+  network_seed: "promptmesh-v1"
   properties: ~
   zomes:
     - name: prompts_integrity

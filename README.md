@@ -31,8 +31,18 @@ You can use the UI and AI relay without Holochain running. It falls back to demo
    ```bash
    ollama pull llama3
    ```
-2. Open `ui/index.html` in your browser
-3. The LLM bar defaults to **Ollama / llama3** — start relaying prompts immediately
+
+2. Start Ollama with CORS enabled (required for browser access):
+   ```bash
+   # macOS / Linux
+   OLLAMA_ORIGINS=* ollama serve
+
+   # Windows — set in System Environment Variables, then restart Ollama
+   # Variable: OLLAMA_ORIGINS   Value: *
+   ```
+
+3. Open `ui/index.html` in your browser
+4. The LLM bar defaults to **Ollama / llama3** — start relaying prompts immediately
 
 ---
 
@@ -56,8 +66,8 @@ rustup target add wasm32-unknown-unknown
 **4. Build**
 ```bash
 cargo build --release --target wasm32-unknown-unknown
-hc dna pack dnas/promptmesh/workdir
-hc app pack workdir
+hc dna pack dnas/promptmesh/workdir --recursive
+hc app pack workdir --recursive
 ```
 
 **5. Run**
@@ -113,8 +123,8 @@ rustup target add wasm32-unknown-unknown
 **7. Build**
 ```bash
 cargo build --release --target wasm32-unknown-unknown
-hc dna pack dnas/promptmesh/workdir
-hc app pack workdir
+hc dna pack dnas/promptmesh/workdir --recursive
+hc app pack workdir --recursive
 ```
 
 **8. Run the conductor**

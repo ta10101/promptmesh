@@ -18,6 +18,7 @@ pub fn create_prompt(input: CreatePromptInput) -> ExternResult<ActionHash> {
     let action_hash = create_entry(&EntryTypes::Prompt(prompt))?;
 
     let path = Path::from("all_prompts");
+    path.ensure()?;
     let path_hash = path.path_entry_hash()?;
     create_link(
         path_hash,
@@ -45,8 +46,11 @@ pub fn get_prompt(action_hash: ActionHash) -> ExternResult<Option<Record>> {
 #[hdk_extern]
 pub fn get_all_prompts(_: ()) -> ExternResult<Vec<Record>> {
     let path = Path::from("all_prompts");
+    path.ensure()?;
     let path_hash = path.path_entry_hash()?;
-    let links = get_links(path_hash, LinkTypes::AllPrompts, None)?;
+    let links = get_links(
+        GetLinksInputBuilder::try_from_raw_input(path_hash, LinkTypes::AllPrompts, None)?.build()
+    )?;
 
     let records: Vec<Record> = links
         .into_iter()
@@ -61,7 +65,9 @@ pub fn get_all_prompts(_: ()) -> ExternResult<Vec<Record>> {
 
 #[hdk_extern]
 pub fn get_agent_prompts(agent: AgentPubKey) -> ExternResult<Vec<Record>> {
-    let links = get_links(agent, LinkTypes::AgentToPrompts, None)?;
+    let links = get_links(
+        GetLinksInputBuilder::try_from_raw_input(agent, LinkTypes::AgentToPrompts, None)?.build()
+    )?;
 
     let records: Vec<Record> = links
         .into_iter()

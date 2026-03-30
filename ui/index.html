@@ -569,10 +569,13 @@
   document.getElementById('submitSuggestionBtn').addEventListener('click', async () => {
     const content = document.getElementById('suggestionContent').value.trim();
     if (!content) { setStatus('suggestionStatus', 'Content required.', true); return; }
+    await submitSuggestion(content, null);
+  });
 
+  async function submitSuggestion(content, aiModel) {
     if (demoMode) {
       if (!DEMO_SUGGESTIONS[selectedPromptHash]) DEMO_SUGGESTIONS[selectedPromptHash] = [];
-      DEMO_SUGGESTIONS[selectedPromptHash].push({ content, ai_model: null });
+      DEMO_SUGGESTIONS[selectedPromptHash].push({ content, ai_model: aiModel });
       document.getElementById('suggestionContent').value = '';
       setStatus('suggestionStatus', 'Added (demo mode)');
       renderSuggestions(DEMO_SUGGESTIONS[selectedPromptHash]);
@@ -582,12 +585,12 @@
     const hashBytes = Uint8Array.from(atob(selectedPromptHash), c => c.charCodeAt(0));
     setStatus('suggestionStatus', 'Submitting...');
     try {
-      await callZome('suggestions', 'create_suggestion', { prompt_hash: Array.from(hashBytes), content, ai_model: null });
+      await callZome('suggestions', 'create_suggestion', { prompt_hash: Array.from(hashBytes), content, ai_model: aiModel });
       document.getElementById('suggestionContent').value = '';
       setStatus('suggestionStatus', 'Submitted!');
       await loadSuggestions();
     } catch (e) { setStatus('suggestionStatus', e.message, true); }
-  });
+  }
 
   async function loadSuggestions() {
     if (demoMode) { renderSuggestions(DEMO_SUGGESTIONS[selectedPromptHash] || []); return; }
@@ -639,6 +642,9 @@
       ? `You are a prompt engineer. Peers have suggested:\n${suggestions.map((s, i) => `${i + 1}. ${s}`).join('\n')}\n\nUse these to rewrite the prompt into an improved final version.`
       : 'You are a prompt engineer. Rewrite the following prompt to be clearer, more specific, and more effective.';
 
+    const btn = document.getElementById('relayBtn');
+    btn.disabled = true;
+    btn.textContent = 'Sending...';
     setStatus('relayStatus', 'Sending to ' + provider + '...');
 
     try {
@@ -647,24 +653,36 @@
       if (provider === 'ollama') {
         const url = document.getElementById('ollamaUrl').value.trim();
         const ollamaModel = document.getElementById('ollamaModel').value.trim();
-        const res = await fetch(`${url}/api/chat`, {
-          method: 'POST',
-          headers: { 'content-type': 'application/json' },
-          body: JSON.stringify({
-            model: ollamaModel,
-            stream: false,
-            messages: [
-              { role: 'system', content: systemMsg },
-              { role: 'user', content: selectedPromptData.content },
-            ],
-          }),
-        });
+        let res;
+        try {
+          res = await fetch(`${url}/api/chat`, {
+            method: 'POST',
+            headers: { 'content-type': 'application/json' },
+            body: JSON.stringify({
+              model: ollamaModel,
+              stream: false,
+              messages: [
+                { role: 'system', content: systemMsg },
+                { role: 'user', content: selectedPromptData.content },
+              ],
+            }),
+          });
+        } catch (fetchErr) {
+          if (fetchErr instanceof TypeError) {
+            throw new Error(
+              'Cannot reach Ollama — CORS blocked or Ollama not running.\n' +
+              'Fix: start Ollama with  OLLAMA_ORIGINS=* ollama serve\n' +
+              'Windows: set OLLAMA_ORIGINS=* in System Environment Variables, then restart Ollama.'
+            );
+          }
+          throw fetchErr;
+        }
         const data = await res.json();
         output = data.message?.content || data.response;
 
       } else if (provider === 'anthropic') {
         const apiKey = document.getElementById('apiKey').value.trim();
-        if (!apiKey) { setStatus('relayStatus', 'Enter your Anthropic API key above.', true); return; }
+        if (!apiKey) { setStatus('relayStatus', 'Enter your Anthropic API key above.', true); btn.disabled = false; btn.textContent = 'Aggregate + Send to AI'; return; }
         const res = await fetch('https://api.anthropic.com/v1/messages', {
           method: 'POST',
           headers: {
@@ -686,7 +704,7 @@
 
       } else if (provider === 'openai') {
         const apiKey = document.getElementById('apiKey').value.trim();
-        if (!apiKey) { setStatus('relayStatus', 'Enter your OpenAI API key above.', true); return; }
+        if (!apiKey) { setStatus('relayStatus', 'Enter your OpenAI API key above.', true); btn.disabled = false; btn.textContent = 'Aggregate + Send to AI'; return; }
         const res = await fetch('https://api.openai.com/v1/chat/completions', {
           method: 'POST',
           headers: { 'authorization': 'Bearer ' + apiKey, 'content-type': 'application/json' },
@@ -708,18 +726,21 @@
       document.getElementById('aiOutput').textContent = output;
       document.getElementById('postRelayActions').style.display = 'block';
       document.getElementById('suggestionContent').value = output;
-      setStatus('relayStatus', 'Done — result ready to post as suggestion.');
+      setStatus('relayStatus', 'Done — posting as suggestion...');
+      // auto-submit the AI result as a suggestion
+      await submitSuggestion(output, document.getElementById('modelSelect').value);
 
     } catch (e) {
-      setStatus('relayStatus', 'Error: ' + e.message, true);
+      setStatus('relayStatus', e.message, true);
+    } finally {
+      btn.disabled = false;
+      btn.textContent = 'Aggregate + Send to AI';
     }
   });
 
-  document.getElementById('postAsSuggestionBtn').addEventListener('click', () => {
+  document.getElementById('postAsSuggestionBtn').addEventListener('click', async () => {
     if (!lastAiOutput) return;
-    document.getElementById('suggestionContent').value = lastAiOutput;
-    // scroll to suggestions panel
-    document.getElementById('suggestionsPanel').scrollIntoView({ behavior: 'smooth' });
+    await submitSuggestion(lastAiOutput, document.getElementById('modelSelect').value);
   });
 
   // ── Helpers ───────────────────────────────────────────────

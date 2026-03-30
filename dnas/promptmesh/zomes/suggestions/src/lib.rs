@@ -37,7 +37,9 @@ pub fn create_suggestion(input: CreateSuggestionInput) -> ExternResult<ActionHas
 
 #[hdk_extern]
 pub fn get_suggestions_for_prompt(prompt_hash: ActionHash) -> ExternResult<Vec<Record>> {
-    let links = get_links(prompt_hash, LinkTypes::PromptToSuggestions, None)?;
+    let links = get_links(
+        GetLinksInputBuilder::try_from_raw_input(prompt_hash, LinkTypes::PromptToSuggestions, None)?.build()
+    )?;
 
     let records: Vec<Record> = links
         .into_iter()
@@ -52,7 +54,9 @@ pub fn get_suggestions_for_prompt(prompt_hash: ActionHash) -> ExternResult<Vec<R
 
 #[hdk_extern]
 pub fn get_agent_suggestions(agent: AgentPubKey) -> ExternResult<Vec<Record>> {
-    let links = get_links(agent, LinkTypes::AgentToSuggestions, None)?;
+    let links = get_links(
+        GetLinksInputBuilder::try_from_raw_input(agent, LinkTypes::AgentToSuggestions, None)?.build()
+    )?;
 
     let records: Vec<Record> = links
         .into_iter()
